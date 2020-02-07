@@ -2,32 +2,40 @@ import json
 
 import redis
 import os
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 
-from finn import scrape_ad
+from .finn import scrape_ad
 
-app = Flask(__name__)
+from .app import app
 
-redis_service = redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
-cache_duration = int(os.getenv('CACHE_DURATION_SECONDS', 23 * 60 * 60))
+use_cache = os.getenv("USE_CACHE", False)
+if use_cache:
+    redis_service = redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"))
+    cache_duration = int(os.getenv("CACHE_DURATION_SECONDS", 23 * 60 * 60)) # This could maybe be 2 weeks (duration of ads)
 
-
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def ad_detail():
-    finnkode = request.args.get('finnkode')
+    finnkode = request.args.get("finnkode")
     if not finnkode or not finnkode.isdigit():
-        return jsonify(**{'error': 'Missing or invalid param finnkode. Try /?finnkode=KODE'})
+        return jsonify(
+            **{
+                "error": "Missing or invalid param finnkode. Try /?finnkode=KODE"
+            }
+        )
 
-    cache_key = 'finn-ad:{}'.format(finnkode)
-    ad = redis_service.get(cache_key)
+    cache_key = "finn-ad:{}".format(finnkode)
+    ad = False
+    if use_cache:
+        ad = redis_service.get(cache_key)
     if not ad:
         ad = scrape_ad(finnkode)
-        redis_service.set(cache_key, json.dumps(ad), cache_duration)
+        if use_cache:
+            redis_service.set(cache_key, json.dumps(ad), cache_duration)
     else:
+        app.logger.info("Using Cache")
         ad = json.loads(ad)
-
     return jsonify(ad=ad)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
