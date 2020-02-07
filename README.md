@@ -1,3 +1,12 @@
+# Disclamer
+This is a modification of [this project](https://github.com/nikolaik/pyfinn).
+I added support for extracting the geolocation of appartments.
+Also added support for running on iterapp.
+Still not supported: Redis store in iterapp.
+
+---
+
+
 🏠 Fetch real estate listing from finn.no and make available as JSON response.
 
 Requests to finn.no uses a randomized user agent. The response data is cached (with redis).
@@ -12,13 +21,21 @@ Hit the button below to create your own. You need a free Heroku account.
 
 ## Installation
 
+### Full on docker (recommended)
+    docker-compose up
+    open 'http://localhost:5000/'
+    
+### Only cache in docker
+
     pipenv install --three
     docker run -d -p 6379:6379 redis
     pipenv run api.py
     open 'http://localhost:5000/'
 
+
 ## Configuration
 
+- `USE_CACHE` Whether or not to use redis cache. At the time of writing this in not used in production on iterapp
 - `REDIS_URL` URL to to Redis instance. Default: `redis://localhost:6379/0`
 - `CACHE_DURATION_SECONDS` How long we cache ad data. Default: `23 * 60 * 60` seconds.
 
