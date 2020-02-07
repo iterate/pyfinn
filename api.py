@@ -2,7 +2,7 @@ import json
 
 import redis
 import os
-from flask import request, jsonify
+from flask import request, jsonify, send_from_directory
 
 from .finn import scrape_ad
 
@@ -10,8 +10,13 @@ from .app import app
 
 use_cache = os.getenv("USE_CACHE", False)
 if use_cache:
-    redis_service = redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"))
-    cache_duration = int(os.getenv("CACHE_DURATION_SECONDS", 23 * 60 * 60)) # This could maybe be 2 weeks (duration of ads)
+    redis_service = redis.from_url(
+        os.getenv("REDIS_URL", "redis://redis:6379/0")
+    )
+    cache_duration = int(
+        os.getenv("CACHE_DURATION_SECONDS", 23 * 60 * 60)
+    )  # This could maybe be 2 weeks (duration of ads)
+
 
 @app.route("/", methods=["GET"])
 def ad_detail():
@@ -35,6 +40,15 @@ def ad_detail():
         app.logger.info("Using Cache")
         ad = json.loads(ad)
     return jsonify(ad=ad)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
 
 if __name__ == "__main__":
