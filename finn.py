@@ -6,6 +6,11 @@ import dateparser
 from fake_useragent import UserAgent
 from requests_html import HTMLSession
 
+from urllib.parse import unquote
+import requests
+from bs4 import BeautifulSoup
+
+from .app import app
 
 session = HTMLSession()
 ua = UserAgent()
@@ -60,11 +65,22 @@ def _calc_price(ad_data):
     cost = ad_data.get('Omkostninger', 0)
     return ad_data['Totalpris'] - debt - cost
 
+def _extract_lat_lng(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text)
+
+    metas = soup.find_all('meta')
+    meta_content = [ meta.attrs['content'] for meta in metas if 'name' in meta.attrs and meta.attrs['name'] == 'FINN.pulseOptions' ]
+    content_location = eval(unquote(meta_content[0]))['contentLocation']
+
+    lat = content_location['latitude']
+    lng = content_location['longitude']
+
+    return lat, lng
 
 def scrape_ad(finnkode):
     url = 'https://www.finn.no/realestate/homes/ad.html?finnkode={code}'.format(code=finnkode)
     r = session.get(url, headers={'user-agent': ua.random})
-
     r.raise_for_status()
 
     html = r.html
@@ -86,6 +102,8 @@ def scrape_ad(finnkode):
     ad_data.update(_parse_data_lists(html))
 
     ad_data['Prisantydning'] = _calc_price(ad_data)
+
+    ad_data['latitude'], ad_data['longitude'] = _extract_lat_lng(url)
 
     return ad_data
 
