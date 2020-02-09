@@ -7,7 +7,8 @@ from .finn import scrape_ad
 
 from .app import app
 
-use_cache = os.getenv("USE_CACHE", False)
+use_cache = eval(os.getenv("USE_CACHE", "False"))
+
 if use_cache:
     import redis
 
@@ -29,11 +30,12 @@ def ad_detail():
             }
         )
 
-    cache_key = "finn-ad:{}".format(finnkode)
     ad = False
     if use_cache:
+        cache_key = "finn-ad:{}".format(finnkode)
         ad = redis_service.get(cache_key)
     if not ad:
+        app.logger.info("Fetching ad")
         ad = scrape_ad(finnkode)
         if use_cache:
             redis_service.set(cache_key, json.dumps(ad), cache_duration)
