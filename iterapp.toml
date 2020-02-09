@@ -1,2 +1,5 @@
 port = 5000
 readiness_path="/"
+
+[env.common]
+USE_CACHE="False"
