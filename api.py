@@ -1,6 +1,5 @@
 import json
 
-import redis
 import os
 from flask import request, jsonify, send_from_directory
 
@@ -10,6 +9,8 @@ from .app import app
 
 use_cache = os.getenv("USE_CACHE", False)
 if use_cache:
+    import redis
+
     redis_service = redis.from_url(
         os.getenv("REDIS_URL", "redis://redis:6379/0")
     )
